@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.sql
+*.sqlite
+*.db
+*.key
+*.pem
+*.log
+.vscode/
+.DS_Store
+Thumbs.db
