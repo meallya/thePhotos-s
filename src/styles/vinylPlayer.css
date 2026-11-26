@@ -1,0 +1,33 @@
+.vinyl-player {
+  position: relative;
+  display: grid;
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  place-items: center;
+  overflow: visible;
+}
+
+.vinyl-player-image {
+  display: block;
+  width: 112.5%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center;
+  animation: vinyl-player-rotation 5s linear infinite;
+  animation-play-state: paused;
+}
+
+.vinyl-player.is-playing .vinyl-player-image { animation-play-state: running; }
+
+@keyframes vinyl-player-rotation {
+  to { transform: rotate(360deg); }
+}
+
+.spotify-embed-host { min-height: 152px; }
+.spotify-embed-host.is-playlist { min-height: 352px; }
+.spotify-embed-note { margin: 6px 2px 1px; color: #917c6e; font: 8px/1.45 'DM Sans', sans-serif; }
+
+@media (prefers-reduced-motion: reduce) {
+  .vinyl-player-image { animation-play-state: paused !important; }
+}
