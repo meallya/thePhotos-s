@@ -15,10 +15,16 @@ test("final review lightbox reuses the rendered preview and exported PNG", () =>
   assert.match(app, /URL\.createObjectURL\(exportedBlob\)/);
   assert.match(app, /exportedPreviewUrl=\{exportedPreviewUrl\}/);
   assert.match(page, /VIEW PHOTO/);
+  assert.match(page, /createPortal\([\s\S]*?document\.body/);
+  assert.match(page, /className="photo-preview-backdrop"[\s\S]*?onClick=/);
+  assert.match(page, /onClick=\{\(event\) => event\.stopPropagation\(\)\}/);
   assert.match(page, /role="dialog"[\s\S]*?aria-modal="true"/);
   assert.match(page, /src=\{exportedPreviewUrl \|\| stripUrl\}/);
   assert.match(page, /onClick=\{onExport\}/);
   assert.match(page, /event\.key === "Escape"/);
+  assert.doesNotMatch(page, /onTouchStart=|onPointerDown=/);
+  assert.match(styles, /\.photo-preview-backdrop \{[^}]*position: fixed[^}]*z-index: 1000/);
   assert.match(styles, /\.photo-preview-lightbox-content \.photo-strip-preview img \{[^}]*max-height/);
   assert.match(styles, /object-fit: contain/);
+  assert.match(styles, /env\(safe-area-inset-bottom\)/);
 });

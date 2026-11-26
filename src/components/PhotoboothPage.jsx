@@ -12,9 +12,32 @@ function ShotCounter({ shots, photoCount }) {
     >
       {Array.from({ length: photoCount }, (_, index) => (
         <span key={index} className={index < shots.length ? "filled" : ""}>
-          {index < shots.length ? "✳" : "0" + (index + 1)}
+          {"0" + (index + 1)}
         </span>
       ))}
+    </div>
+  );
+}
+
+function CameraStatusNumber({ countdown, shots, photoCount, retakeIndex }) {
+  const isCountdown = countdown === 3 || countdown === 2 || countdown === 1;
+  const activeNumber = retakeIndex !== null
+    ? retakeIndex
+    : Math.min(shots.length + 1, photoCount);
+  const formattedNumber = String(activeNumber).padStart(2, "0");
+  const displayValue = isCountdown ? String(countdown) : formattedNumber;
+  const ariaLabel = isCountdown
+    ? "Countdown " + countdown
+    : "Photo " + formattedNumber + " of " + String(photoCount).padStart(2, "0");
+
+  return (
+    <div
+      className={"camera-status-number" + (isCountdown ? " is-countdown" : "")}
+      role="status"
+      aria-live="polite"
+      aria-label={ariaLabel}
+    >
+      {displayValue}
     </div>
   );
 }
@@ -24,10 +47,15 @@ export default function PhotoboothPage({
   cameraOn,
   cameraOpening,
   cameraError,
+  facingMode = "user",
+  flashEnabled = false,
+  torchActive = false,
   countdown,
   taking,
   developing,
   flash,
+  screenFlash = false,
+  shutter = false,
   shots,
   photoCount,
   onPhotoCountChange,
@@ -35,6 +63,8 @@ export default function PhotoboothPage({
   filterStyle,
   retakeIndex,
   onCameraAction,
+  onFlipCamera = () => {},
+  onToggleFlash = () => {},
   onStopCamera,
   onCancelRetake,
   onCustomize,
@@ -221,92 +251,116 @@ export default function PhotoboothPage({
             </div>
           )}
 
-          {createPortal(<div className="camera-popup-backdrop" hidden={!cameraPopupOpen}>
-            <section
-              className="camera-popup"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="camera-popup-title"
-            >
-              <header className="camera-popup-heading">
-                <div>
-                  <div className="section-kicker">STEP INTO THE FRAME</div>
-                  <h2 id="camera-popup-title">Your little photo booth</h2>
-                  <p>
-                    {retakeIndex !== null
-                      ? "Let's give this moment another try."
-                      : "The camera is only on while this window is open."}
-                  </p>
-                </div>
-                <button
-                  ref={closeCameraButtonRef}
-                  type="button"
-                  className="camera-popup-close"
-                  onClick={handleCloseCamera}
-                  aria-label={
-                    retakeIndex !== null
-                      ? "Cancel retake and close camera"
-                      : "Close camera"
-                  }
+          {createPortal(
+            <>
+              <div className="camera-popup-backdrop" hidden={!cameraPopupOpen}>
+                <section
+                  className="camera-popup"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="camera-popup-title"
                 >
-                  <X size={19} />
-                </button>
-              </header>
+                  <header className="camera-popup-heading">
+                    <div>
+                      <div className="section-kicker">STEP INTO THE FRAME</div>
+                      <h2 id="camera-popup-title">Your little photo booth</h2>
+                      <p>
+                        {retakeIndex !== null
+                          ? "Let's give this moment another try."
+                          : "The camera is only on while this window is open."}
+                      </p>
+                    </div>
+                    <button
+                      ref={closeCameraButtonRef}
+                      type="button"
+                      className="camera-popup-close"
+                      onClick={handleCloseCamera}
+                      aria-label={
+                        retakeIndex !== null
+                          ? "Cancel retake and close camera"
+                          : "Close camera"
+                      }
+                    >
+                      <X size={19} />
+                    </button>
+                  </header>
 
-              <RetroCamera
-                videoRef={videoRef}
-                cameraOn={cameraOn}
-                cameraOpening={cameraOpening}
-                countdown={countdown}
-                taking={taking}
-                flash={flash}
-                shots={shots}
-                photoCount={photoCount}
-                filterStyle={filterStyle}
-                retakeIndex={retakeIndex}
-              />
+                  <RetroCamera
+                    videoRef={videoRef}
+                    cameraOn={cameraOn}
+                    cameraOpening={cameraOpening}
+                    facingMode={facingMode}
+                    flashEnabled={flashEnabled}
+                    torchActive={torchActive}
+                    countdown={countdown}
+                    taking={taking}
+                    flash={flash}
+                    shutter={shutter}
+                    shots={shots}
+                    photoCount={photoCount}
+                    filterStyle={filterStyle}
+                    retakeIndex={retakeIndex}
+                    onFlipCamera={onFlipCamera}
+                    onToggleFlash={onToggleFlash}
+                    cameraFlipDisabled={busy}
+                    flashDisabled={cameraOpening}
+                  />
 
-              {retakeIndex !== null && (
-                <p className="retake-note">
-                  Retaking photo {String(retakeIndex).padStart(2, "0")} of{" "}
-                  {String(photoCount).padStart(2, "0")}. Your other moments will
-                  stay just as they are.
-                </p>
-              )}
-              {(cameraError || sessionError) && (
-                <p className="error-message camera-error" role="alert">
-                  {cameraError || sessionError}
-                </p>
-              )}
+                  {retakeIndex !== null && (
+                    <p className="retake-note">
+                      Retaking photo {String(retakeIndex).padStart(2, "0")} of{" "}
+                      {String(photoCount).padStart(2, "0")}. Your other moments
+                      will stay just as they are.
+                    </p>
+                  )}
+                  {(cameraError || sessionError) && (
+                    <p className="error-message camera-error" role="alert">
+                      {cameraError || sessionError}
+                    </p>
+                  )}
 
-              <div className="camera-popup-controls">
-                <ShotCounter shots={shots} photoCount={photoCount} />
-                <button
-                  type="button"
-                  className="capture-button"
-                  onClick={onCameraAction}
-                  disabled={busy || (cameraOn && retakeIndex !== null)}
-                >
-                  <span className="capture-inner">
-                    {taking ? <span className="loader" /> : <Camera size={19} />}
-                  </span>
-                  <span>
-                    {cameraOpening
-                      ? "OPENING CAMERA"
-                      : !cameraOn
-                        ? "OPEN CAMERA"
-                        : retakeIndex !== null
-                          ? "PREPARING RETAKE"
-                          : busy
-                            ? "CAPTURING YOUR MOMENTS"
-                            : "TAKE " +
-                              photoCount +
-                              (photoCount === 1 ? " PHOTO" : " PHOTOS")}
-                  </span>
-                </button>
+                  <div className="camera-popup-controls">
+                    <CameraStatusNumber
+                      countdown={countdown}
+                      shots={shots}
+                      photoCount={photoCount}
+                      retakeIndex={retakeIndex}
+                    />
+                    <button
+                      type="button"
+                      className="capture-button"
+                      onClick={onCameraAction}
+                      disabled={busy || (cameraOn && retakeIndex !== null)}
+                    >
+                      <span className="capture-inner">
+                        {taking ? <span className="loader" /> : <Camera size={19} />}
+                      </span>
+                      <span>
+                        {cameraOpening
+                          ? "OPENING CAMERA"
+                          : !cameraOn
+                            ? "OPEN CAMERA"
+                            : retakeIndex !== null
+                              ? "PREPARING RETAKE"
+                              : busy
+                                ? "CAPTURING YOUR MOMENTS"
+                                : "TAKE " +
+                                  photoCount +
+                                  (photoCount === 1 ? " PHOTO" : " PHOTOS")}
+                      </span>
+                    </button>
+                  </div>
+                </section>
               </div>
-            </section>
-          </div>, document.body)}
+              <div
+                className={
+                  "camera-screen-flash" + (screenFlash ? " is-active" : "")
+                }
+                aria-hidden="true"
+              />
+            </>,
+            document.body,
+          )}
         </section>
       </div>
     </section>

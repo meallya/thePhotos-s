@@ -267,21 +267,23 @@ export function parseSpotifyPlaylistId(value) {
   }
 }
 
-export function captureSnapshot(video) {
+export function captureSnapshot(video, { mirrored = true } = {}) {
   if (!video?.videoWidth || !video?.videoHeight) return null;
   const canvas = document.createElement("canvas");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not create a canvas for this photo.");
-  ctx.translate(canvas.width, 0);
-  ctx.scale(-1, 1);
+  if (mirrored) {
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+  }
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL("image/jpeg", 0.92);
 }
 
-export function capturePhoto(video, id, filterId = "natural") {
-  const original = captureSnapshot(video);
+export function capturePhoto(video, id, filterId = "natural", options = {}) {
+  const original = captureSnapshot(video, options);
   return original ? createPhotoModel(original, id, filterId) : null;
 }
 

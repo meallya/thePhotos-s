@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   capturePhoto,
   normalizePhotoCount,
@@ -13,18 +13,29 @@ import {
   runRetakeSequence,
 } from "../lib/photoboothSession.js";
 
-export default function usePhotoboothSession() {
+export default function usePhotoboothSession({
+  mirrored = true,
+  flashEnabled = false,
+  torchActive = false,
+} = {}) {
   const [shots, setShots] = useState([]);
   const [countdown, setCountdown] = useState(null);
   const [taking, setTaking] = useState(false);
   const [developing, setDeveloping] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [screenFlash, setScreenFlash] = useState(false);
+  const [shutter, setShutter] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [sessionError, setSessionError] = useState("");
   const [capturedAt, setCapturedAt] = useState(null);
   const sessionRef = useRef(0);
   const takingRef = useRef(false);
   const timersRef = useRef(new Set());
+  const optionsRef = useRef({ mirrored, flashEnabled, torchActive });
+
+  useEffect(() => {
+    optionsRef.current = { mirrored, flashEnabled, torchActive };
+  }, [mirrored, flashEnabled, torchActive]);
 
   const cancelPendingWaits = useCallback(() => {
     for (const entry of timersRef.current) {
@@ -50,6 +61,8 @@ export default function usePhotoboothSession() {
     setTaking(false);
     setCountdown(null);
     setFlash(false);
+    setScreenFlash(false);
+    setShutter(false);
     setDeveloping(false);
     setShowResult(false);
     setSessionError("");
@@ -95,9 +108,16 @@ export default function usePhotoboothSession() {
       const { captured, cancelled } = await runCaptureSequence({
         photoCount: requestedPhotoCount,
         wait: (duration) => wait(duration, sessionId),
-        capture: (photoIndex) => capturePhoto(video, "photo-" + sessionId + "-" + (photoIndex + 1)),
+        capture: (photoIndex) =>
+          capturePhoto(video, "photo-" + sessionId + "-" + (photoIndex + 1), "natural", {
+            mirrored: optionsRef.current.mirrored,
+          }),
         onCountdown: setCountdown,
         onFlash: setFlash,
+        onScreenFlash: setScreenFlash,
+        onShutter: setShutter,
+        flashEnabled: () => optionsRef.current.flashEnabled,
+        useScreenFlash: () => optionsRef.current.flashEnabled && !optionsRef.current.torchActive,
         onPhoto: setShots,
       });
       if (cancelled) return false;
@@ -125,6 +145,8 @@ export default function usePhotoboothSession() {
         setTaking(false);
         setCountdown(null);
         setFlash(false);
+        setScreenFlash(false);
+        setShutter(false);
         setDeveloping(false);
       }
     }
@@ -141,9 +163,16 @@ export default function usePhotoboothSession() {
     try {
       const { photo, cancelled } = await runRetakeSequence({
         wait: (duration) => wait(duration, sessionId),
-        capture: () => capturePhoto(video, photoId),
+        capture: () =>
+          capturePhoto(video, photoId, "natural", {
+            mirrored: optionsRef.current.mirrored,
+          }),
         onCountdown: setCountdown,
         onFlash: setFlash,
+        onScreenFlash: setScreenFlash,
+        onShutter: setShutter,
+        flashEnabled: () => optionsRef.current.flashEnabled,
+        useScreenFlash: () => optionsRef.current.flashEnabled && !optionsRef.current.torchActive,
       });
       if (cancelled) return false;
       if (!photo) {
@@ -164,6 +193,8 @@ export default function usePhotoboothSession() {
         setTaking(false);
         setCountdown(null);
         setFlash(false);
+        setScreenFlash(false);
+        setShutter(false);
       }
     }
   }, [wait]);
@@ -175,6 +206,8 @@ export default function usePhotoboothSession() {
     setTaking(false);
     setCountdown(null);
     setFlash(false);
+    setScreenFlash(false);
+    setShutter(false);
     setSessionError("");
   }, [cancelPendingWaits]);
 
@@ -192,6 +225,8 @@ export default function usePhotoboothSession() {
     taking,
     developing,
     flash,
+    screenFlash,
+    shutter,
     showResult,
     sessionError,
     capturedAt,
@@ -205,6 +240,3 @@ export default function usePhotoboothSession() {
     restoreShotEdits,
   };
 }
-
-
-

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   Download,
@@ -326,66 +327,68 @@ export default function PhotoCustomizationPage({
         </section>
       </div>
 
-      {photoPreviewOpen && (
-        <div
-          className="photo-preview-backdrop"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setPhotoPreviewOpen(false);
-            }
-          }}
-        >
-          <section
-            ref={photoPreviewDialogRef}
-            className="photo-preview-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="final-photo-preview-title"
-            onMouseDown={(event) => event.stopPropagation()}
+      {photoPreviewOpen &&
+        createPortal(
+          <div
+            className="photo-preview-backdrop"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setPhotoPreviewOpen(false);
+              }
+            }}
           >
-            <header className="photo-preview-heading">
-              <div>
-                <div className="section-kicker">FINAL REVIEW</div>
-                <h2 id="final-photo-preview-title">Your photo strip</h2>
+            <section
+              ref={photoPreviewDialogRef}
+              className="photo-preview-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="final-photo-preview-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <header className="photo-preview-heading">
+                <div>
+                  <div className="section-kicker">FINAL REVIEW</div>
+                  <h2 id="final-photo-preview-title">Your photo strip</h2>
+                </div>
+                <button
+                  ref={photoPreviewCloseRef}
+                  type="button"
+                  className="capture-result-close"
+                  aria-label="Close photo preview"
+                  onClick={() => setPhotoPreviewOpen(false)}
+                >
+                  <X size={20} />
+                </button>
+              </header>
+              <div className="photo-preview-lightbox-content">
+                <PhotoStripPreview
+                  src={exportedPreviewUrl || stripUrl}
+                  loading={false}
+                  orientation={stripConfig.layout}
+                />
               </div>
-              <button
-                ref={photoPreviewCloseRef}
-                type="button"
-                className="capture-result-close"
-                aria-label="Close photo preview"
-                onClick={() => setPhotoPreviewOpen(false)}
-              >
-                <X size={20} />
-              </button>
-            </header>
-            <div className="photo-preview-lightbox-content">
-              <PhotoStripPreview
-                src={exportedPreviewUrl || stripUrl}
-                loading={false}
-                orientation={stripConfig.layout}
-              />
-            </div>
-            <div className="photo-preview-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setPhotoPreviewOpen(false)}
-              >
-                CLOSE
-              </button>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={onExport}
-                disabled={exporting || stripLoading}
-              >
-                <Download size={15} />
-                {exporting ? "PREPARING PNG..." : "DOWNLOAD PHOTO"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+              <div className="photo-preview-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setPhotoPreviewOpen(false)}
+                >
+                  CLOSE
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={onExport}
+                  disabled={exporting || stripLoading}
+                >
+                  <Download size={15} />
+                  {exporting ? "PREPARING PNG..." : "DOWNLOAD PHOTO"}
+                </button>
+              </div>
+            </section>
+          </div>,
+          document.body,
+        )}
 
       <section className="customization-editor" aria-labelledby="customization-editor-title">
         <div>

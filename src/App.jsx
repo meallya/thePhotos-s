@@ -31,9 +31,14 @@ export default function App() {
     cameraOn,
     cameraError,
     cameraOpening,
+    facingMode,
+    torchActive,
     startCamera,
     stopCamera,
+    flipCamera,
+    syncTorch,
   } = useCamera();
+  const [flashEnabled, setFlashEnabled] = useState(false);
   const [page, setPage] = useState("photobooth");
   const [tutorialOpen, setTutorialOpen] = useState(() => {
     try {
@@ -80,6 +85,8 @@ export default function App() {
     taking,
     developing,
     flash,
+    screenFlash,
+    shutter,
     showResult,
     sessionError,
     capturedAt,
@@ -90,7 +97,15 @@ export default function App() {
     resetSession,
     updateShotEdits,
     resetShotEdits,
-  } = usePhotoboothSession();
+  } = usePhotoboothSession({
+    mirrored: facingMode !== "environment",
+    flashEnabled,
+    torchActive,
+  });
+
+  useEffect(() => {
+    void syncTorch(cameraOn && flashEnabled);
+  }, [cameraOn, facingMode, flashEnabled, syncTorch]);
 
   useEffect(() => {
     if (!shots.length) {
@@ -428,10 +443,15 @@ export default function App() {
             cameraOn={cameraOn}
             cameraOpening={cameraOpening}
             cameraError={cameraError}
+            facingMode={facingMode}
+            flashEnabled={flashEnabled}
+            torchActive={torchActive}
             countdown={countdown}
             taking={taking}
             developing={developing}
             flash={flash}
+            screenFlash={screenFlash}
+            shutter={shutter}
             shots={shots}
             photoCount={selectedPhotoCount}
             onPhotoCountChange={setSelectedPhotoCount}
@@ -439,6 +459,8 @@ export default function App() {
             filterStyle="none"
             retakeIndex={retakeIndex > 0 ? retakeIndex : null}
             onCameraAction={runSession}
+            onFlipCamera={flipCamera}
+            onToggleFlash={() => setFlashEnabled((current) => !current)}
             onStopCamera={handleStopCamera}
             onCancelRetake={handleCancelRetake}
             onCustomize={() => setPage("customize")}
